@@ -170,15 +170,24 @@ main {
 .todo-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
+    gap: 5px;
+    padding: 5px;
     border: 1px solid var(--muted);
     border-radius: 5px;
     transition: all 0.3s ease;
+    cursor: grab;
 }
-
 .todo-item:hover {
     background: var(--muted);
+}
+.todo-item:active {
+    cursor: grabbing;
+}
+
+.todo-item > i {
+    pointer-events: none;
+    font-size: 14px;
+    color: var(--gray);
 }
 
 .todo-text {

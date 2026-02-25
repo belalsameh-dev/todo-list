@@ -3,6 +3,8 @@ const addBtn = document.querySelector("#addBtn");
 const todoList = document.querySelector(".todo-list");
 
 const todos = JSON.parse(localStorage.getItem("todos")) || [];
+let draggedItem = null;
+let draggedIndex = null;
 
 todoInput.addEventListener("input", () => {
   todoInput.value === "" ? (addBtn.disabled = true) : (addBtn.disabled = false);
@@ -15,8 +17,10 @@ function save() {
 function createTodoItem(text) {
   const todoItem = document.createElement("div");
   todoItem.classList.add("todo-item");
+  todoItem.setAttribute("draggable", "true");
 
   todoItem.innerHTML = `
+      <i class="fas fa-grip-vertical"></i>
       <div class="todo-text">${text}</div>
       <button id="editBtn" class="btn btn-warning">
         <i class="fas fa-edit"></i>
@@ -43,6 +47,28 @@ function render() {
     // Edit
     todoItem.querySelector("#editBtn").addEventListener("click", () => {
       editTodo(index);
+    });
+
+    // ===== Drag Events =====
+    todoItem.addEventListener("dragstart", () => {
+      draggedItem = todoItem;
+      draggedIndex = index;
+    });
+
+    todoItem.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
+
+    todoItem.addEventListener("drop", () => {
+      const targetIndex = index;
+
+      // swap elements
+      const temp = todos[draggedIndex];
+      todos[draggedIndex] = todos[targetIndex];
+      todos[targetIndex] = temp;
+
+      save();
+      render();
     });
 
     todoList.prepend(todoItem);
