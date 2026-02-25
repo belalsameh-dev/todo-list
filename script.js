@@ -1,117 +1,148 @@
+// ================== SELECTORS ==================
 const todoInput = document.querySelector("#todoInput");
 const addBtn = document.querySelector("#addBtn");
 const todoList = document.querySelector(".todo-list");
 
-const todos = JSON.parse(localStorage.getItem("todos")) || [];
-let draggedItem = null;
-let draggedIndex = null;
 
-todoInput.addEventListener("input", () => {
-  todoInput.value === "" ? (addBtn.disabled = true) : (addBtn.disabled = false);
-});
+// ================== STATE ==================
+let todos = JSON.parse(localStorage.getItem("todos")) || [];
+let draggedElement = null;
 
+
+// ================== STORAGE ==================
 function save() {
   localStorage.setItem("todos", JSON.stringify(todos));
 }
 
-function createTodoItem(text) {
-  const todoItem = document.createElement("div");
-  todoItem.classList.add("todo-item");
-  todoItem.setAttribute("draggable", "true");
 
-  todoItem.innerHTML = `
-      <i class="fas fa-grip-vertical"></i>
-      <div class="todo-text">${text}</div>
-      <button id="editBtn" class="btn btn-warning">
-        <i class="fas fa-edit"></i>
-      </button>
-      <button id="deleteBtn" class="btn btn-danger">
-        <i class="fas fa-trash"></i>
-      </button>
-    `;
+// ================== UI ==================
+function createTodoItem(todo) {
+  const item = document.createElement("div");
+  item.className = "todo-item";
+  item.draggable = true;
+  item.dataset.id = todo.id;
 
-  return todoItem;
+  item.innerHTML = `
+    <i class="fas fa-grip-vertical"></i>
+    <div class="todo-text">${todo.text}</div>
+    <button class="edit-btn btn btn-warning"><i class="fas fa-edit"></i></button>
+    <button class="delete-btn btn btn-danger"><i class="fas fa-trash"></i></button>
+  `;
+
+  return item;
 }
 
 function render() {
   todoList.innerHTML = "";
-
-  todos.forEach((todo, index) => {
-    const todoItem = createTodoItem(todo);
-
-    // Delete
-    todoItem.querySelector("#deleteBtn").addEventListener("click", () => {
-      deleteTodo(index);
-    });
-
-    // Edit
-    todoItem.querySelector("#editBtn").addEventListener("click", () => {
-      editTodo(index);
-    });
-
-    // ===== Drag Events =====
-    todoItem.addEventListener("dragstart", () => {
-      draggedItem = todoItem;
-      draggedIndex = index;
-    });
-
-    todoItem.addEventListener("dragover", (e) => {
-      e.preventDefault();
-    });
-
-    todoItem.addEventListener("drop", () => {
-      const targetIndex = index;
-
-      // swap elements
-      const temp = todos[draggedIndex];
-      todos[draggedIndex] = todos[targetIndex];
-      todos[targetIndex] = temp;
-
-      save();
-      render();
-    });
-
-    todoList.prepend(todoItem);
-  });
+  todoList.append(...todos.map(createTodoItem));
 }
 
+
+// ================== ACTIONS ==================
 function addTodo() {
   const value = todoInput.value.trim();
   if (!value) return;
 
-  todos.push(value);
-  save();
-  render();
+  const todo = {
+    id: Date.now(), 
+    text: value
+  };
 
+  todos.unshift(todo);
+  save();
+
+  todoList.prepend(createTodoItem(todo));
   todoInput.value = "";
   addBtn.disabled = true;
 }
 
-function deleteTodo(index) {
-  //   if (confirm("Are you sure you want to delete this item?")) {
-  todos.splice(index, 1);
+function deleteTodo(id, element) {
+  todos = todos.filter(t => t.id !== id);
+  element.remove();
   save();
-  render();
-  //   }
 }
 
-function editTodo(index) {
-  const newValue = prompt("Update your todo item", todos[index]);
+function editTodo(id, element) {
+  const todo = todos.find(t => t.id === id);
+  const newValue = prompt("Update todo item", todo.text);
+  if (!newValue || !newValue.trim()) return;
 
-  if (newValue.trim() !== "") {
-    todos[index] = newValue.trim();
-    save();
-    render();
-  }
+  todo.text = newValue.trim();
+  element.querySelector(".todo-text").textContent = todo.text;
+  save();
 }
 
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    addTodo();
-  }
+
+// ================== EVENTS ==================
+
+// input validation
+todoInput.addEventListener("input", () => {
+  addBtn.disabled = !todoInput.value.trim();
 });
 
+// add todo
 addBtn.addEventListener("click", addTodo);
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter") addTodo();
+});
 
-// Initial Render
+// event delegation for edit/delete
+todoList.addEventListener("click", e => {
+  const item = e.target.closest(".todo-item");
+  if (!item) return;
+
+  const id = Number(item.dataset.id);
+
+  if (e.target.closest(".delete-btn")) deleteTodo(id, item);
+  if (e.target.closest(".edit-btn")) editTodo(id, item);
+});
+
+
+// ================== DRAG & DROP ==================
+todoList.addEventListener("dragstart", e => {
+  draggedElement = e.target.closest(".todo-item");
+  draggedElement.classList.add("dragging");
+});
+
+todoList.addEventListener("dragend", () => {
+  draggedElement.classList.remove("dragging");
+  draggedElement = null;
+  saveStateFromDOM();
+});
+
+todoList.addEventListener("dragover", e => {
+  e.preventDefault();
+  const afterElement = getDragAfterElement(todoList, e.clientY);
+  if (!draggedElement) return;
+
+  if (afterElement == null) todoList.appendChild(draggedElement);
+  else todoList.insertBefore(draggedElement, afterElement);
+});
+
+function getDragAfterElement(container, y) {
+  const elements = [...container.querySelectorAll(".todo-item:not(.dragging)")];
+
+  return elements.reduce(
+    (closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+
+      if (offset < 0 && offset > closest.offset) return { offset, element: child };
+      return closest;
+    },
+    { offset: Number.NEGATIVE_INFINITY }
+  ).element;
+}
+
+
+// ================== HELPER ==================
+function saveStateFromDOM() {
+  const newOrderIds = [...todoList.children].map(el => Number(el.dataset.id));
+  todos.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+  save();
+}
+
+
+// ================== INIT ==================
 render();
+addBtn.disabled = true;

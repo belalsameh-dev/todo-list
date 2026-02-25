@@ -4,10 +4,10 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
 }
 
 :root {
-    --bg: #43484c;
     --black: #000;
     --muted: #F0F0F0;
     --gray: #C0C0C0;
@@ -18,8 +18,8 @@
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
-    background: var(--bg);
+    background: var(--primary);
+    background: linear-gradient(28deg, rgba(9, 141, 236, 1) 0%, rgba(161, 211, 247, 1) 55%);
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -28,7 +28,7 @@ body {
 
 main {
     background: var(--white);
-    width: min(100%, 500px);
+    width: min(100%, 600px);
     max-height: calc(100% - 20px);
     padding: 15px;
     margin: 10px;
@@ -51,6 +51,7 @@ main {
     border-radius: 5px;
     width: 100%;
     padding: 18px 10px;
+    padding-right: 80px;
     font-size: 16px;
 }
 .input-container input:focus {
@@ -184,7 +185,7 @@ main {
     cursor: grabbing;
 }
 
-.todo-item > i {
+.todo-item>i {
     pointer-events: none;
     font-size: 14px;
     color: var(--gray);
@@ -201,6 +202,7 @@ main {
 @media screen and (max-width: 375px) {
     .input-container input {
         padding: 15px 10px;
+        padding-right: 55px;
     }
 
     .input-container .btn {
@@ -213,10 +215,5 @@ main {
     .btn {
         padding: 8px;
         font-size: 14px;
-    }
-
-    .todo-item {
-        padding: 8px;
-        gap: 8px;
     }
 }
